@@ -43,6 +43,65 @@ describe('Charge Resource', function() {
       });
     });
 
+    it('Sends the correct direct charge request with `stripe_account` in the data', function() {
+      stripe.charges.create({
+        amount: '1500',
+        currency: 'usd',
+        shipping: {
+          address: {
+            line1: 'foo',
+          },
+        },
+        stripe_account: 'acct_foobarbaz',
+      });
+      expect(stripe.LAST_REQUEST).to.deep.equal({
+        method: 'POST',
+        url: '/v1/charges',
+        data: {
+          amount: '1500',
+          currency: 'usd',
+          shipping: {
+            address: {
+              line1: 'foo',
+            },
+          },
+        },
+        headers: {
+          'Stripe-Account': 'acct_foobarbaz',
+        },
+      });
+    });
+
+    it('Sends the correct direct charge request with `stripe_account` in the options', function() {
+      stripe.charges.create({
+        amount: '1500',
+        currency: 'usd',
+        shipping: {
+          address: {
+            line1: 'foo',
+          },
+        },
+      }, {
+        stripe_account: 'acct_foobarbaz',
+      });
+      expect(stripe.LAST_REQUEST).to.deep.equal({
+        method: 'POST',
+        url: '/v1/charges',
+        data: {
+          amount: '1500',
+          currency: 'usd',
+          shipping: {
+            address: {
+              line1: 'foo',
+            },
+          },
+        },
+        headers: {
+          'Stripe-Account': 'acct_foobarbaz',
+        },
+      });
+    });
+
     it('Sends the correct request for Bitcoin', function() {
       var receiver = stripe.bitcoinReceivers.create({
         amount: 100,

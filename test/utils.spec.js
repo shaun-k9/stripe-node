@@ -101,7 +101,7 @@ describe('utils', function() {
     it('handles an empty list', function() {
       expect(utils.getDataFromArgs([])).to.deep.equal({});
     });
-    it('handles an list with no object', function() {
+    it('handles a list with no object', function() {
       var args = [1, 3];
       expect(utils.getDataFromArgs(args)).to.deep.equal({});
       expect(args.length).to.equal(2);
@@ -113,6 +113,11 @@ describe('utils', function() {
     });
     it('finds the data', function() {
       var args = [{foo: 'bar'}, {api_key: 'foo'}];
+      expect(utils.getDataFromArgs(args)).to.deep.equal({foo: 'bar'});
+      expect(args.length).to.equal(1);
+    });
+    it('finds the data - and only the data - even if there are options in there', function() {
+      var args = [{foo: 'bar', stripe_account: 'acct_foobarbaz'}];
       expect(utils.getDataFromArgs(args)).to.deep.equal({foo: 'bar'});
       expect(args.length).to.equal(1);
     });
@@ -141,6 +146,16 @@ describe('utils', function() {
       });
       expect(args.length).to.equal(1);
     });
+    it('pulls the options out of a single options/data object', function() {
+      var args = [{foo: 'bar', stripe_account: 'acct_foobarbaz'}];
+      expect(utils.getOptionsFromArgs(args)).to.deep.equal({
+        auth: null,
+        headers: {
+          'Stripe-Account': 'acct_foobarbaz',
+        },
+      });
+      expect(args.length).to.equal(0);
+    });
     it('parses an api key', function() {
       var args = ['sk_test_iiiiiiiiiiiiiiiiiiiiiiii'];
       expect(utils.getOptionsFromArgs(args)).to.deep.equal({
@@ -149,7 +164,7 @@ describe('utils', function() {
       });
       expect(args.length).to.equal(0);
     });
-    it('parse an idempotency key', function() {
+    it('parses an idempotency key', function() {
       var args = [{foo: 'bar'}, {idempotency_key: 'foo'}];
       expect(utils.getOptionsFromArgs(args)).to.deep.equal({
         auth: null,
@@ -157,25 +172,41 @@ describe('utils', function() {
       });
       expect(args.length).to.equal(1);
     });
-    it('parse an idempotency key and api key (with data)', function() {
-      var args = [{foo: 'bar'}, {
-        api_key: 'sk_test_iiiiiiiiiiiiiiiiiiiiiiii',
-        idempotency_key: 'foo',
-      },];
+    it('parses a stripe_account', function() {
+      var args = [{foo: 'bar'}, {stripe_account: 'acct_foobarbaz'}];
       expect(utils.getOptionsFromArgs(args)).to.deep.equal({
-        auth: 'sk_test_iiiiiiiiiiiiiiiiiiiiiiii',
-        headers: {'Idempotency-Key': 'foo'},
+        auth: null,
+        headers: {'Stripe-Account': 'acct_foobarbaz'},
       });
       expect(args.length).to.equal(1);
     });
-    it('parse an idempotency key and api key', function() {
-      var args = [{
+    it('parses an idempotency key, api key and stripe_account (with data)', function() {
+      var args = [{foo: 'bar'}, {
         api_key: 'sk_test_iiiiiiiiiiiiiiiiiiiiiiii',
         idempotency_key: 'foo',
+        stripe_account: 'acct_foobarbaz',
       },];
       expect(utils.getOptionsFromArgs(args)).to.deep.equal({
         auth: 'sk_test_iiiiiiiiiiiiiiiiiiiiiiii',
-        headers: {'Idempotency-Key': 'foo'},
+        headers: {
+          'Idempotency-Key': 'foo',
+          'Stripe-Account': 'acct_foobarbaz',
+        },
+      });
+      expect(args.length).to.equal(1);
+    });
+    it('parses an idempotency key, api key and stripe_account', function() {
+      var args = [{
+        api_key: 'sk_test_iiiiiiiiiiiiiiiiiiiiiiii',
+        idempotency_key: 'foo',
+        stripe_account: 'acct_foobarbaz',
+      },];
+      expect(utils.getOptionsFromArgs(args)).to.deep.equal({
+        auth: 'sk_test_iiiiiiiiiiiiiiiiiiiiiiii',
+        headers: {
+          'Idempotency-Key': 'foo',
+          'Stripe-Account': 'acct_foobarbaz',
+        },
       });
       expect(args.length).to.equal(0);
     });
