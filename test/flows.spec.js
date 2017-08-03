@@ -410,4 +410,56 @@ describe('Flows', function() {
       ).to.eventually.have.property('object', 'three_d_secure');
     });
   });
+
+  describe('Request/Response Events', function() {
+    it('should emit a `request` event on request', function(done) {
+      var idempotency_key = Math.random().toString(36).slice(2);
+
+      function onRequest(request) {
+        stripe.removeListener('request', onRequest);
+
+        expect(request).to.eql({
+          api_version: 'latest',
+          idempotency_key: idempotency_key,
+          method: 'POST',
+          path: '/v1/charges',
+        });
+
+        done();
+      }
+
+      stripe.on('request', onRequest);
+
+      stripe.charges.create({
+        amount: 1234,
+        currency: 'usd',
+        card: 'tok_chargeDeclined',
+      }, {
+        idempotency_key: idempotency_key,
+      }).then(null, function() {});
+    });
+
+    it('should emit a `response` event on response', function(done) {
+      function onResponse(response) {
+        stripe.removeListener('response', onResponse);
+
+        expect(response.api_version).to.equal('latest');
+        expect(response.method).to.equal('POST');
+        expect(response.path).to.equal('/v1/charges');
+        expect(response.request_id).to.match(/req_[\w\d]/);
+        expect(response.status).to.equal(402);
+        expect(response.elapsed).to.be.within(50, 30000);;
+
+        done();
+      }
+
+      stripe.on('response', onResponse);
+
+      stripe.charges.create({
+        amount: 1234,
+        currency: 'usd',
+        card: 'tok_visa',
+      });
+    });
+  });
 });
